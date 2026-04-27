@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>问卷数据生成器 - 会员版</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: system-ui, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+        }
+        body {
+            background: #f0f4f8;
+            margin: 0;
+            padding: 24px 20px;
+        }
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+        .card {
+            background: white;
+            border-radius: 24px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.05);
+            padding: 1.5rem 2rem;
+            margin-bottom: 2rem;
+            transition: all 0.2s;
+        }
+        .card-header {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 1.25rem;
+            border-left: 5px solid #3b82f6;
+            padding-left: 1rem;
+            color: #1e293b;
+        }
+        .grid-2col {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1.5rem;
+        }
+        .form-group {
+            margin-bottom: 1.2rem;
+        }
+        label {
+            font-weight: 500;
+            display: block;
+            margin-bottom: 0.4rem;
+            color: #334155;
+            font-size: 0.9rem;
+        }
+        input, select, button {
+            border-radius: 12px;
+            border: 1px solid #cbd5e1;
+            padding: 0.6rem 0.8rem;
+            font-size: 0.9rem;
+            width: 100%;
+            background: white;
+            transition: 0.2s;
+        }
+        input:focus, select:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59,130,246,0.2);
+        }
+        button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            font-weight: 500;
+            cursor: pointer;
+            width: auto;
+            padding: 0.6rem 1.2rem;
+        }
+        button.secondary { background: #64748b; }
+        button.danger { background: #ef4444; }
+        button.outline {
+            background: transparent;
+            border: 1px solid #3b82f6;
+            color: #3b82f6;
+        }
+        button.small { padding: 0.3rem 0.8rem; font-size: 0.8rem; }
+        button.gold-outline {
+            background: transparent;
+            border: 1px solid #f59e0b;
+            color: #d97706;
+            font-weight: 600;
+            padding: 0.3rem 0.8rem;
+            font-size: 0.8rem;
+            border-radius: 12px;
+            cursor: pointer;
+        }
+        button.gold-outline:hover { background: #fff7ed; }
+        .flex-row { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; }
+        .badge {
+            background: #e2e8f0;
+            border-radius: 40px;
+            padding: 0.2rem 0.8rem;
+            font-size: 0.8rem;
+        }
+        table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+        th, td { border: 1px solid #e2e8f0; padding: 0.5rem; text-align: center; }
+        th { background: #f8fafc; font-weight: 600; }
+        .scroll-table { overflow-x: auto; max-height: 500px; border-radius: 16px; }
+        .dimension-item, .basic-item {
+            background: #f9fafb;
+            padding: 0.8rem;
+            border-radius: 16px;
+            margin-bottom: 0.8rem;
+        }
+        .regression-row, .moderation-row, .diff-row {
+            background: #fef9e3;
+            padding: 0.5rem;
+            border-radius: 12px;
+            margin: 0.5rem 0;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .moderation-row { background: #e6f7ec; border-left: 4px solid #10b981; }
+        .diff-row { background: #ffe6e6; border-left: 4px solid #f97316; }
+        .warning { color: #b91c1c; font-size: 0.8rem; }
+        .btn-group { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 16px; }
+        .item-card {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            padding: 0.6rem;
+            transition: 0.1s;
+        }
+        .item-controls { display: flex; gap: 8px; align-items: center; margin-top: 6px; flex-wrap: wrap; }
+        .item-controls input { width: 70px; padding: 0.3rem; font-size: 0.75rem; }
+
+        /* 支付弹窗 */
+        .member-modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5); z-index: 9999;
+            display: flex; align-items: center; justify-content: center;
+            backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+        }
+        .member-modal-overlay.hidden { display: none; }
+        .member-modal {
+            background: white; border-radius: 20px; padding: 1.8rem;
+            max-width: 440px; width: 90%; box-shadow: 0 20px 40px rgba(0,0,0,0.2); position: relative;
+        }
+        .member-modal h3 { margin-top: 0; font-size: 1.3rem; text-align: center; color: #1e293b; }
+        .member-modal .price { text-align: center; font-size: 2rem; font-weight: 700; color: #d97706; margin: 0.8rem 0; }
+        .member-modal .pay-btns { display: flex; gap: 10px; justify-content: center; margin: 1rem 0; }
+        .member-modal .pay-btn { flex: 1; padding: 0.8rem; border-radius: 12px; font-weight: 600; cursor: pointer; text-align: center; border: none; color: white; }
+        .member-modal .pay-btn.wechat { background: #07c160; }
+        .member-modal .pay-btn.alipay { background: #1677ff; }
+        .member-modal .qr-img { display: block; max-width: 180px; margin: 0.5rem auto; border-radius: 12px; border: 1px solid #e2e8f0; }
+        .member-modal .code-input { text-align: center; font-family: monospace; letter-spacing: 2px; margin: 0.8rem 0; width: 100%; padding: 0.5rem; }
+        .member-modal .close-btn { position: absolute; top: 10px; right: 16px; background: none; border: none; font-size: 1.3rem; cursor: pointer; color: #94a3b8; padding: 4px 8px; }
+        @media (max-width: 800px) {
+            .card { padding: 1rem; }
+            .grid-2col { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <!-- 问卷基本信息卡片 -->
+    <div class="card">
+        <div class="card-header">📋 问卷基本信息</div>
+        <div class="grid-2col">
+            <div class="form-group">
+                <label>问卷名称 / 项目标题</label>
+                <input type="text" id="surveyName" placeholder="例如: 消费者满意度调研" value="用户满意度与忠诚度调研">
+            </div>
+            <div class="form-group">
+                <label>样本量 (生成数据行数) <span id="sampleLimitHint" style="font-size:0.7rem;color:#d97706;"></span></label>
+                <input type="number" id="sampleSize" value="300" min="10" max="30" step="1">
+            </div>
+            <div class="form-group">
+                <label>量表题总数量</label>
+                <input type="number" id="totalItems" value="12" min="1" max="50" step="1">
+            </div>
+            <div class="form-group">
+                <label>随机种子 (留空随机)</label>
+                <input type="number" id="randomSeed" placeholder="可选，用于复现">
+            </div>
+        </div>
+        <div class="warning">💡 说明：每个量表题基于所属维度潜变量得分 + 噪声生成，再经线性变换精确匹配您设定的均值和标准差，最后映射为1~5分Likert量表。支持维度间主效应回归和调节效应（交互项）。</div>
+    </div>
+
+    <!-- 基本信息题部分 -->
+    <div class="card">
+        <div class="card-header">👤 基本信息题 (人口学变量)</div>
+        <div class="flex-row" style="justify-content: space-between;">
+            <label>管理基本信息题：可自定义性别、年龄、地区等字段，生成模拟数据</label>
+            <button type="button" id="addBasicItemBtn" class="small">+ 添加基本信息题</button>
+        </div>
+        <div id="basicItemsContainer" style="margin-bottom: 1rem;"></div>
+        <div class="warning">💡 每个基本信息题将作为独立列出现在最终数据中。支持文本(从选项随机)、数值(范围)、单选/多选(均按均匀分布随机)。</div>
+    </div>
+
+    <!-- 维度与题目归属配置 -->
+    <div class="card">
+        <div class="card-header">📐 量表维度 & 题目归属 (可单独控制每道题的均值/标准差)</div>
+        <div class="form-group">
+            <div class="flex-row" style="justify-content: space-between;">
+                <label>维度管理 (至少一个维度)</label>
+                <button type="button" id="addDimensionBtn" class="small">+ 添加维度</button>
+            </div>
+            <div id="dimensionsContainer" style="margin-bottom: 1rem;"></div>
+        </div>
+        <div class="form-group">
+            <label>📝 每个量表题配置 (总题数: <span id="itemCountDisplay">0</span>) &nbsp;&nbsp;
+                <button type="button" id="resetAllItemStatsBtn" class="small outline">重置所有题目均值为3.0，标准差为1.0</button>
+            </label>
+            <div id="itemAssignmentPanel" style="background:#fafcff; border-radius: 16px; padding: 0.8rem; border:1px solid #e2e8f0; max-height: 500px; overflow-y: auto;"></div>
+        </div>
+        <div class="warning">⚠️ 每道题可独立设定目标均值(1~5)和标准差(0.3~2.0)。</div>
+    </div>
+
+    <!-- 维度间主效应回归 & 调节效应 -->
+    <div class="card">
+        <div class="card-header">🔗 维度间关系：主效应回归 + 调节效应 (交互项)</div>
+        <div class="grid-2col">
+            <div>
+                <label>📌 主效应回归 (源维度 → 目标维度)</label>
+                <div id="regressionList" style="margin-bottom: 12px; min-height: 100px;"></div>
+                <div class="flex-row">
+                    <select id="regSourceDim" style="width: auto; flex:1;"></select>
+                    <span style="font-weight:bold;">→</span>
+                    <select id="regTargetDim" style="width: auto; flex:1;"></select>
+                    <input type="number" id="regCoeff" placeholder="系数 β" step="0.1" value="0.5" style="width: 100px;">
+                    <button id="addRegressionBtn" class="small">添加</button>
+                </div>
+                <div class="warning" style="margin-top: 8px;">💡 主效应系数为标准化系数 (范围 -1~1)。</div>
+            </div>
+            <div>
+                <label>✨ 调节效应 (自变量 × 调节变量 → 因变量)</label>
+                <div id="moderationList" style="margin-bottom: 12px; min-height: 100px;"></div>
+                <div class="flex-row">
+                    <select id="modSourceDim" style="width: auto; flex:1;"></select>
+                    <span style="font-weight:bold;">×</span>
+                    <select id="modModeratorDim" style="width: auto; flex:1;"></select>
+                    <span style="font-weight:bold;">→</span>
+                    <select id="modTargetDim" style="width: auto; flex:1;"></select>
+                    <input type="number" id="modCoeff" placeholder="交互系数" step="0.1" value="0.3" style="width: 100px;">
+                    <button id="addModerationBtn" class="small">添加</button>
+                </div>
+                <div class="warning" style="margin-top: 8px;">💡 交互项系数表示调节效应强度。</div>
+            </div>
+        </div>
+        <div class="grid-2col" style="margin-top: 1rem;">
+            <div><button id="resetRegressionBtn" class="outline small">清空所有主效应</button></div>
+            <div><button id="resetModerationBtn" class="outline small">清空所有调节效应</button></div>
+        </div>
+        <div style="margin-top: 1rem;">
+            <label>📊 维度间理论相关矩阵</label>
+            <div id="corrMatrixPreview" style="background:#f1f5f9; border-radius: 16px; padding: 12px; font-size: 0.75rem; overflow-x: auto;">待配置维度后显示...</div>
+        </div>
+    </div>
+
+    <!-- 分类变量差异性分析 -->
+    <div class="card">
+        <div class="card-header">📊 分类变量差异性分析 (组间差异显著性设置)</div>
+        <div class="flex-row" style="justify-content: space-between;">
+            <label>添加规则：让某个分类变量对某个维度产生显著的组间差异</label>
+            <button type="button" id="addDiffRuleBtn" class="small outline">+ 添加差异性规则</button>
+        </div>
+        <div id="diffRulesContainer" style="margin-bottom: 1rem;"></div>
+        <div class="warning">💡 例如：让“性别”在“满意度”维度上，男女均值差达到 0.5 个标准差。</div>
+    </div>
+
+    <!-- 生成与导出 -->
+    <div class="card">
+        <div class="card-header">⚙️ 生成数据 & 导出</div>
+        <div class="btn-group">
+            <button id="generateDataBtn">📎 生成问卷数据</button>
+            <button id="exportCsvBtn" class="secondary" style="display:none;">📥 导出CSV</button>
+            <button id="exportExcelBtn" class="secondary" style="display:none;">📊 导出Excel</button>
+            <button id="memberEntryBtn" class="gold-outline">✨ 升级会员</button>
+        </div>
+        <div id="generateStatus" style="margin-top: 12px; font-size: 0.85rem; color: #2c3e66;"></div>
+    </div>
+
+    <!-- 数据预览 -->
+    <div class="card">
+        <div class="card-header">📄 生成数据预览 (前20行)</div>
+        <div id="dataPreviewTable" class="scroll-table" style="background: white;">尚未生成数据</div>
+    </div>
+</div>
+
+<!-- 支付弹窗 -->
+<div class="member-modal-overlay hidden" id="memberModal">
+    <div class="member-modal">
+        <button class="close-btn" onclick="closeMemberModal()">✕</button>
+        <h3>✨ 升级为会员</h3>
+        <div class="price">¥ 9.9 / 20次生成</div>
+        <p style="text-align:center;color:#64748b;">解锁全部功能 · 样本量不限</p>
+        <div class="pay-btns">
+            <button class="pay-btn wechat" onclick="handleWechatPay()">微信支付</button>
+            <button class="pay-btn alipay" onclick="handleAlipayPay()">支付宝</button>
+        </div>
+        <div id="qrArea" style="text-align:center;margin:0.8rem 0;display:none;">
+            <img id="qrImage" class="qr-img" src="" alt="收款二维码" onerror="this.style.display='none';document.getElementById('qrFallback').style.display='block';">
+            <div id="qrFallback" style="display:none;color:#b91c1c;font-size:0.7rem;">二维码加载失败，请联系客服</div>
+        </div>
+        <div style="border-top:2px dashed #e2e8f0;padding-top:0.8rem;margin-top:0.8rem;">
+            <label style="display:block;text-align:center;">🔑 输入激活码</label>
+            <input type="text" id="activationCodeInput" class="code-input" placeholder="MEMBER-XXXX-XXXX-XXXX">
+            <div style="text-align:center;margin-top:8px;">
+                <button onclick="activateCode()" style="background:#f59e0b;color:white;border:none;padding:0.5rem 1.2rem;border-radius:12px;font-weight:600;">验证激活</button>
+            </div>
+            <p style="font-size:0.7rem;color:#94a3b8;text-align:center;">激活后可生成20次，每次样本量最高5000</p>
+        </div>
+    </div>
+</div>
+
+<script>
+// ==================== 全局变量（界面交互使用） ====================
+const API_BASE = window.location.origin;
+
+// 用户ID
+let userId = localStorage.getItem('_uid');
+if (!userId) {
+    userId = crypto.randomUUID();
+    localStorage.setItem('_uid', userId);
+}
+
+// 界面数据结构（与原来完全一致）
+let dimensions = [];
+let nextDimId = 1;
+let regressionEdges = [];
+let moderationEffects = [];
+let itemAssignments = [];
+let itemTargetMean = [];
+let itemTargetSD = [];
+let basicItems = [];
+let nextBasicId = 1;
+let diffRules = [];
+let generatedData = null;
+let lastGeneratedCSV = ''; // 保存最近一次生成的CSV内容
+
+// ==================== UI 辅助函数 ====================
+function escapeHtml(s) {
+    return String(s).replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'})[m]);
+}
+
+function refreshAllUI() {
+    renderDimensionsManager();
+    renderItemAssignmentPanel();
+    updateRegressionSelects();
+    renderRegressionList();
+    renderModerationList();
+    renderDiffRules();
+    renderBasicItemsManager();
+    computeAndRenderCorrelationMatrix();
+    checkMemberStatus();
+}
+
+// ---------- 基本信息题 ----------
+function renderBasicItemsManager() {
+    const container = document.getElementById('basicItemsContainer');
+    if (!container) return;
+    if (basicItems.length === 0) {
+        container.innerHTML = '<div class="warning">暂无基本信息题，点击上方按钮添加。</div>';
+        return;
+    }
+    container.innerHTML = basicItems.map((item, idx) => {
+        let detailHtml = '';
+        if (item.type === 'select' || item.type === 'radio') {
+            detailHtml = `<div class="form-group" style="margin-top:4px;"><label>选项列表 (逗号分隔)</label><input type="text" class="basic-options" data-idx="${idx}" value="${(item.options || []).join(',')}" placeholder="男,女,其他"></div>`;
+        } else if (item.type === 'number') {
+            detailHtml = `<div class="flex-row"><label>范围: </label><input type="number" class="basic-min" data-idx="${idx}" value="${item.min ?? 18}" style="width:80px;"> ~ <input type="number" class="basic-max" data-idx="${idx}" value="${item.max ?? 65}" style="width:80px;"></div>`;
+        } else {
+            detailHtml = `<div class="form-group"><label>候选文本 (逗号分隔, 随机选择)</label><input type="text" class="basic-options" data-idx="${idx}" value="${(item.options || ['样本A','样本B','样本C']).join(',')}"></div>`;
+        }
+        return `<div class="basic-item">
+            <div class="flex-row" style="justify-content: space-between;">
+                <div><strong>${escapeHtml(item.name)}</strong> <span class="badge">${item.type === 'select' ? '单选' : (item.type === 'number' ? '数值' : '文本')}</span></div>
+                <button class="small danger" onclick="removeBasicItem(${item.id})">删除</button>
+            </div>
+            <div class="flex-row" style="margin-top:6px;">
+                <input type="text" class="basic-name" data-id="${item.id}" value="${escapeHtml(item.name)}" placeholder="字段名" style="width:150px;">
+                <select class="basic-type" data-id="${item.id}" style="width:110px;">
+                    <option value="text" ${item.type === 'text' ? 'selected' : ''}>文本(选项)</option>
+                    <option value="select" ${item.type === 'select' ? 'selected' : ''}>单选</option>
+                    <option value="number" ${item.type === 'number' ? 'selected' : ''}>数值范围</option>
+                </select>
+            </div>
+            ${detailHtml}
+        </div>`;
+    }).join('');
+
+    document.querySelectorAll('.basic-name').forEach(el => el.onchange = e => {
+        const id = parseInt(e.target.closest('.basic-name').dataset.id);
+        const item = basicItems.find(i => i.id === id);
+        if (item) item.name = e.target.value.trim();
+        refreshAllUI();
+    });
+    document.querySelectorAll('.basic-type').forEach(el => el.onchange = e => {
+        const id = parseInt(e.target.closest('.basic-type').dataset.id);
+        const item = basicItems.find(i => i.id === id);
+        if (item) {
+            item.type = e.target.value;
+            if (item.type === 'number') { item.min = item.min ?? 18; item.max = item.max ?? 65; item.options = null; }
+            else if (!item.options) item.options = ['选项A','选项B','选项C'];
+            renderBasicItemsManager();
+        }
+        refreshAllUI();
+    });
+    document.querySelectorAll('.basic-options').forEach(el => el.onchange = e => {
+        const idx = parseInt(e.target.dataset.idx);
+        const val = e.target.value;
+        const item = basicItems[idx];
+        if (item && (item.type === 'text' || item.type === 'select')) {
+            item.options = val.split(',').map(s => s.trim()).filter(s => s);
+            if (item.options.length === 0) item.options = ['默认值'];
+        }
+        refreshAllUI();
+    });
+    document.querySelectorAll('.basic-min, .basic-max').forEach(el => el.onchange = e => {
+        const idx = parseInt(e.target.dataset.idx);
+        const item = basicItems[idx];
+        if (item && item.type === 'number') {
+            const minInput = document.querySelector(`.basic-min[data-idx="${idx}"]`);
+            const maxInput = document.querySelector(`.basic-max[data-idx="${idx}"]`);
+            item.min = parseInt(minInput?.value) || 18;
+            item.max = parseInt(maxInput?.value) || 65;
+        }
+        refreshAllUI();
+    });
+}
+window.removeBasicItem = (id) => {
+    basicItems = basicItems.filter(i => i.id !== id);
+    diffRules = diffRules.filter(r => basicItems.some(i => i.name === r.basicItemName));
+    refreshAllUI();
+};
+
+// ---------- 维度与题目 ----------
+function renderDimensionsManager() {
+    const c = document.getElementById('dimensionsContainer');
+    if (!c) return;
+    if (dimensions.length === 0) c.innerHTML = '<div class="warning">⚠️ 暂无维度，请点击"+ 添加维度"至少创建一个维度。</div>';
+    else c.innerHTML = dimensions.map(d => `<div class="dimension-item flex-row" style="justify-content:space-between;"><span><strong>${escapeHtml(d.name)}</strong> <span class="badge">ID: ${d.id}</span></span><button class="small danger" onclick="removeDimension(${d.id})">删除维度</button></div>`).join('');
+}
+window.removeDimension = (id) => {
+    dimensions = dimensions.filter(d => d.id !== id);
+    regressionEdges = regressionEdges.filter(e => e.sourceId !== id && e.targetId !== id);
+    moderationEffects = moderationEffects.filter(m => m.sourceId !== id && m.moderatorId !== id && m.targetId !== id);
+    diffRules = diffRules.filter(r => r.targetDimId !== id);
+    refreshAllUI();
+};
+
+function renderItemAssignmentPanel() {
+    const total = parseInt(document.getElementById('totalItems').value) || 0;
+    document.getElementById('itemCountDisplay').innerText = total;
+    const panel = document.getElementById('itemAssignmentPanel');
+    if (!panel) return;
+    if (dimensions.length === 0) { panel.innerHTML = '<div class="warning">请先添加维度，再进行题目分配。</div>'; return; }
+    if (itemAssignments.length !== total) {
+        const na = Array(total).fill(dimensions[0]?.id || null);
+        const nm = Array(total).fill(3.0);
+        const ns = Array(total).fill(1.0);
+        for (let i = 0; i < Math.min(total, itemAssignments.length); i++) {
+            if (dimensions.some(d => d.id === itemAssignments[i])) na[i] = itemAssignments[i];
+            if (!isNaN(itemTargetMean[i])) nm[i] = itemTargetMean[i];
+            if (!isNaN(itemTargetSD[i])) ns[i] = itemTargetSD[i];
+        }
+        itemAssignments = na; itemTargetMean = nm; itemTargetSD = ns;
+    }
+    let html = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;">';
+    for (let i = 0; i < total; i++) {
+        html += `<div class="item-card"><div style="font-weight:500;margin-bottom:6px;">📌 题目 ${i+1}</div><div class="flex-row" style="justify-content:space-between;">
+            <select data-itemidx="${i}" class="item-dim-select" style="width:130px;">${dimensions.map(d => `<option value="${d.id}" ${itemAssignments[i]===d.id?'selected':''}>${escapeHtml(d.name)}</option>`).join('')}</select>
+            <div class="item-controls"><span>均值:</span><input type="number" step="0.1" min="1" max="5" value="${itemTargetMean[i].toFixed(2)}" class="item-mean" data-idx="${i}" style="width:65px;"><span>标准差:</span><input type="number" step="0.1" min="0.3" max="2" value="${itemTargetSD[i].toFixed(2)}" class="item-sd" data-idx="${i}" style="width:65px;"></div>
+        </div></div>`;
+    }
+    html += '</div>';
+    panel.innerHTML = html;
+    document.querySelectorAll('.item-dim-select').forEach(el => el.onchange = e => itemAssignments[parseInt(e.target.dataset.itemidx)] = parseInt(e.target.value));
+    document.querySelectorAll('.item-mean').forEach(el => el.onchange = e => { let v = parseFloat(e.target.value); v = Math.min(5,Math.max(1,v)); itemTargetMean[parseInt(e.target.dataset.idx)] = v; e.target.value = v.toFixed(2); });
+    document.querySelectorAll('.item-sd').forEach(el => el.onchange = e => { let v = parseFloat(e.target.value); v = Math.min(2,Math.max(0.3,v)); itemTargetSD[parseInt(e.target.dataset.idx)] = v; e.target.value = v.toFixed(2); });
+}
+
+// ---------- 回归/调节/差异 ----------
+function updateRegressionSelects() {
+    const opts = dimensions.map(d => `<option value="${d.id}">${escapeHtml(d.name)}</option>`).join('');
+    ['regSourceDim','regTargetDim','modSourceDim','modModeratorDim','modTargetDim'].forEach(id => { const el = document.getElementById(id); if(el) el.innerHTML = opts; });
+}
+function renderRegressionList() {
+    const c = document.getElementById('regressionList');
+    if (!c) return;
+    c.innerHTML = regressionEdges.length ? regressionEdges.map((e,i) => {
+        const s = dimensions.find(d => d.id === e.sourceId), t = dimensions.find(d => d.id === e.targetId);
+        return `<div class="regression-row"><span><strong>${s?.name||'?'}</strong> → <strong>${t?.name||'?'}</strong></span><span>β = ${e.coeff.toFixed(3)}</span><button class="small danger" onclick="removeRegression(${i})">删除</button></div>`;
+    }).join('') : '<div class="badge">暂无主效应回归关系</div>';
+}
+window.removeRegression = (i) => { regressionEdges.splice(i,1); refreshAllUI(); };
+
+function renderModerationList() {
+    const c = document.getElementById('moderationList');
+    if (!c) return;
+    c.innerHTML = moderationEffects.length ? moderationEffects.map((m,i) => {
+        const s = dimensions.find(d => d.id === m.sourceId), mod = dimensions.find(d => d.id === m.moderatorId), t = dimensions.find(d => d.id === m.targetId);
+        return `<div class="moderation-row"><span><strong>${s?.name||'?'}</strong> × <strong>${mod?.name||'?'}</strong> → <strong>${t?.name||'?'}</strong></span><span>γ = ${m.coeff.toFixed(3)}</span><button class="small danger" onclick="removeModeration(${i})">删除</button></div>`;
+    }).join('') : '<div class="badge">暂无调节效应</div>';
+}
+window.removeModeration = (i) => { moderationEffects.splice(i,1); refreshAllUI(); };
+
+function renderDiffRules() {
+    const c = document.getElementById('diffRulesContainer');
+    if (!c) return;
+    c.innerHTML = diffRules.length ? diffRules.map((r,i) => {
+        const d = dimensions.find(d => d.id === r.targetDimId);
+        return `<div class="diff-row"><span><strong>${escapeHtml(r.basicItemName)}</strong> 对维度 <strong>${d?.name||'?'}</strong> 差异=${r.maxDiff.toFixed(2)}</span><button class="small danger" onclick="removeDiffRule(${i})">删除</button></div>`;
+    }).join('') : '<div class="badge">暂无差异性规则</div>';
+}
+window.removeDiffRule = (i) => { diffRules.splice(i,1); renderDiffRules(); };
+
+function addDiffRule() {
+    const vars = basicItems.filter(i => i.type === 'select' || i.type === 'text').map(i => i.name);
+    if (!vars.length) { alert('请先添加分类基本信息题'); return; }
+    const vname = prompt('分类变量名:\n' + vars.join(','), vars[0]);
+    if (!vname) return;
+    const tid = parseInt(prompt('目标维度ID:\n' + dimensions.map(d => d.id + ':' + d.name).join(','), dimensions[0]?.id));
+    if (isNaN(tid) || !dimensions.find(d => d.id === tid)) { alert('维度ID无效'); return; }
+    const diff = parseFloat(prompt('组间最大差异(标准化):', '0.5'));
+    if (isNaN(diff)) return;
+    diffRules.push({ basicItemName: vname, targetDimId: tid, maxDiff: diff });
+    renderDiffRules();
+}
+
+// 相关矩阵（前端不再计算，留给后端，此处保持原占位显示）
+function computeAndRenderCorrelationMatrix() {
+    const container = document.getElementById('corrMatrixPreview');
+    if (!container || dimensions.length === 0) {
+        if(container) container.innerHTML = '无维度';
+        return;
+    }
+    // 由于计算已移至后端，此处显示简单提示
+    container.innerHTML = '<div class="warning">相关矩阵将在调用生成时由服务器计算，预览界面暂不显示。</div>';
+}
+
+// ==================== 会员逻辑 ====================
+async function checkMemberStatus() {
+    const code = localStorage.getItem('_member_code');
+    const hint = document.getElementById('sampleLimitHint');
+    const entryBtn = document.getElementById('memberEntryBtn');
+    const sampleInput = document.getElementById('sampleSize');
+
+    if (!code) {
+        if (hint) hint.textContent = '(免费上限30)';
+        if (entryBtn) entryBtn.textContent = '✨ 升级会员';
+        if (sampleInput) sampleInput.max = 30;
+        return;
+    }
+    try {
+        const res = await fetch(`${API_BASE}/api/status`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ code, userId })
+        });
+        const data = await res.json();
+        if (data.isMember) {
+            if (hint) hint.textContent = `(会员，剩余${data.remaining}次)`;
+            if (entryBtn) entryBtn.textContent = '🔄 续费/激活';
+            if (sampleInput) sampleInput.max = 5000;
+        } else {
+            if (hint) hint.textContent = '(次数已用完或未激活)';
+            if (entryBtn) entryBtn.textContent = '✨ 升级会员';
+            if (sampleInput) sampleInput.max = 30;
+        }
+    } catch (e) {
+        if (hint) hint.textContent = '(网络错误)';
+    }
+}
+
+async function activateCode() {
+    const code = document.getElementById('activationCodeInput').value.trim();
+    if (!code) { alert('请输入激活码'); return; }
+    try {
+        const res = await fetch(`${API_BASE}/api/activate`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ code, userId })
+        });
+        const data = await res.json();
+        if (data.success) {
+            localStorage.setItem('_member_code', code);
+            alert(`激活成功！剩余次数：${data.remaining}`);
+            closeMemberModal();
+            checkMemberStatus();
+        } else {
+            alert('激活失败：' + data.message);
+        }
+    } catch (e) {
+        alert('网络错误，激活失败');
+    }
+}
+
+// ==================== 生成数据（调用后端API） ====================
+async function generateFullData() {
+    const code = localStorage.getItem('_member_code');
+    if (!code) {
+        document.getElementById('generateStatus').innerHTML = '❌ 请先激活会员（点击“✨ 升级会员”）';
+        return false;
+    }
+
+    const params = {
+        sampleSize: parseInt(document.getElementById('sampleSize').value),
+        totalItems: parseInt(document.getElementById('totalItems').value),
+        randomSeed: document.getElementById('randomSeed').value ? parseInt(document.getElementById('randomSeed').value) : undefined,
+        basicItems,
+        dimensions,
+        itemAssignments,
+        itemTargetMean,
+        itemTargetSD,
+        regressionEdges,
+        moderationEffects,
+        diffRules
+    };
+
+    document.getElementById('generateStatus').innerHTML = '⏳ 正在生成...';
+    try {
+        const res = await fetch(`${API_BASE}/api/generate`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ code, userId, ...params })
+        });
+        if (!res.ok) {
+            const err = await res.json();
+            document.getElementById('generateStatus').innerHTML = `❌ ${err.error}`;
+            return false;
+        }
+        const csvText = await res.text();
+        lastGeneratedCSV = csvText;
+        // 解析CSV显示预览
+        const lines = csvText.trim().split('\n');
+        if (lines.length > 1) {
+            const headers = lines[0].split(',').map(h => h.replace(/"/g, ''));
+            const rows = [];
+            for (let i = 1; i < Math.min(21, lines.length); i++) {
+                const values = lines[i].split(',').map(v => v.replace(/"/g, ''));
+                const row = {};
+                headers.forEach((h, idx) => row[h] = values[idx] || '');
+                rows.push(row);
+            }
+            generatedData = { headers, rows };
+            renderDataPreview(rows, headers);
+            document.getElementById('exportCsvBtn').style.display = 'inline-block';
+            document.getElementById('exportExcelBtn').style.display = 'inline-block';
+        }
+        document.getElementById('generateStatus').innerHTML = '✅ 生成成功！已自动下载，也可点击下方按钮导出。';
+        // 自动触发下载
+        const blob = new Blob([csvText], {type:'text/csv;charset=utf-8;'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `questionnaire_${Date.now()}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+        checkMemberStatus();
+        return true;
+    } catch (e) {
+        document.getElementById('generateStatus').innerHTML = '❌ 网络错误，生成失败';
+        return false;
+    }
+}
+
+function renderDataPreview(rows, headers) {
+    const div = document.getElementById('dataPreviewTable');
+    if (!rows || !rows.length) { div.innerHTML = '无数据'; return; }
+    let h = '<table><thead><tr><th>#</th>';
+    for (let i = 0; i < Math.min(12, headers.length); i++) h += `<th>${escapeHtml(headers[i])}</th>`;
+    if (headers.length > 12) h += '<th>...</th>';
+    h += '</tr></thead><tbody>';
+    for (let i = 0; i < Math.min(20, rows.length); i++) {
+        h += `<tr><td>${i+1}</td>`;
+        for (let j = 0; j < Math.min(12, headers.length); j++) {
+            h += `<td>${escapeHtml(String(rows[i][headers[j]] ?? ''))}</td>`;
+        }
+        if (headers.length > 12) h += '<td>...</td>';
+        h += '</tr>';
+    }
+    h += '</tbody></table>';
+    div.innerHTML = h;
+}
+
+function exportToCSV() {
+    if (!lastGeneratedCSV) { alert('请先生成数据'); return; }
+    const blob = new Blob([lastGeneratedCSV], {type:'text/csv;charset=utf-8;'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `questionnaire_export.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
+function exportToExcel() {
+    if (!generatedData || !generatedData.rows.length) { alert('请先生成数据'); return; }
+    const { headers, rows } = generatedData;
+    const sheetData = [headers, ...rows.map(r => headers.map(h => r[h] ?? ''))];
+    const ws = XLSX.utils.aoa_to_sheet(sheetData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, '问卷数据');
+    XLSX.writeFile(wb, `问卷数据_${new Date().toISOString().slice(0,19)}.xlsx`);
+}
+
+// ==================== 支付弹窗 ====================
+// 请替换为您的真实二维码图片URL
+const WECHAT_QR = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTgwIiBoZWlnaHQ9IjE4MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTgwIiBoZWlnaHQ9IjE4MCIgZmlsbD0iI2YwZjBmMCIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmb250LXNpemU9IjE0IiBmaWxsPSIjOTk5Ij7lvq7kv6HmlLbkuqPnoIE8L3RleHQ+PHRleHQgeD0iNTAlIiB5PSI2NSUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZvbnQtc2l6ZT0iMTAiIGZpbGw9IiNjY2MiPuivt+aPkuWFpeWunueZuueJqTwvdGV4dD48L3N2Zz4=';
+const ALIPAY_QR = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTgwIiBoZWlnaHQ9IjE4MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTgwIiBoZWlnaHQ9IjE4MCIgZmlsbD0iI2YwZjBmMCIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBkb21pbmFudC1iYXNlbGluZT0ibWlkZGxlIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmb250LXNpemU9IjE0IiBmaWxsPSIjOTk5Ij7mlK/ku5jluqbmlLbkuqPnoIE8L3RleHQ+PHRleHQgeD0iNTAlIiB5PSI2NSUiIGRvbWluYW50LWJhc2VsaW5lPSJtaWRkbGUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZvbnQtc2l6ZT0iMTAiIGZpbGw9IiNjY2MiPuivt+aPkuWFpeWunueZuueJqTwvdGV4dD48L3N2Zz4=';
+
+window.openMemberModal = () => document.getElementById('memberModal').classList.remove('hidden');
+window.closeMemberModal = () => {
+    document.getElementById('memberModal').classList.add('hidden');
+    document.getElementById('qrArea').style.display = 'none';
+};
+window.handleWechatPay = () => {
+    document.getElementById('qrArea').style.display = 'block';
+    document.getElementById('qrImage').src = WECHAT_QR;
+};
+window.handleAlipayPay = () => {
+    document.getElementById('qrArea').style.display = 'block';
+    document.getElementById('qrImage').src = ALIPAY_QR;
+};
+
+document.getElementById('memberModal').addEventListener('click', e => { if (e.target === e.currentTarget) closeMemberModal(); });
+
+// ==================== 初始化 ====================
+document.getElementById('memberEntryBtn').addEventListener('click', openMemberModal);
+document.getElementById('addBasicItemBtn').addEventListener('click', () => {
+    const name = prompt('基本信息题名称', `字段${basicItems.length+1}`);
+    if (name) { basicItems.push({ id: nextBasicId++, name, type: 'select', options: ['选项1','选项2'] }); refreshAllUI(); }
+});
+document.getElementById('addDimensionBtn').addEventListener('click', () => {
+    const name = prompt('维度名称', `维度${dimensions.length+1}`);
+    if (name) { dimensions.push({ id: nextDimId++, name: name.substring(0,20) }); refreshAllUI(); }
+});
+document.getElementById('addRegressionBtn').addEventListener('click', () => {
+    const src = parseInt(document.getElementById('regSourceDim').value);
+    const tgt = parseInt(document.getElementById('regTargetDim').value);
+    const coeff = parseFloat(document.getElementById('regCoeff').value);
+    if (src === tgt) { alert('源和目标不能相同'); return; }
+    regressionEdges.push({ sourceId: src, targetId: tgt, coeff });
+    refreshAllUI();
+});
+document.getElementById('addModerationBtn').addEventListener('click', () => {
+    const src = parseInt(document.getElementById('modSourceDim').value);
+    const mod = parseInt(document.getElementById('modModeratorDim').value);
+    const tgt = parseInt(document.getElementById('modTargetDim').value);
+    const coeff = parseFloat(document.getElementById('modCoeff').value);
+    if (src === tgt || mod === tgt) { alert('自变量/调节变量不能与因变量相同'); return; }
+    moderationEffects.push({ sourceId: src, moderatorId: mod, targetId: tgt, coeff });
+    refreshAllUI();
+});
+document.getElementById('resetRegressionBtn').addEventListener('click', () => { regressionEdges = []; refreshAllUI(); });
+document.getElementById('resetModerationBtn').addEventListener('click', () => { moderationEffects = []; refreshAllUI(); });
+document.getElementById('addDiffRuleBtn').addEventListener('click', addDiffRule);
+document.getElementById('totalItems').addEventListener('change', refreshAllUI);
+document.getElementById('generateDataBtn').addEventListener('click', generateFullData);
+document.getElementById('exportCsvBtn').addEventListener('click', exportToCSV);
+document.getElementById('exportExcelBtn').addEventListener('click', exportToExcel);
+document.getElementById('resetAllItemStatsBtn').addEventListener('click', () => {
+    itemTargetMean = Array(itemAssignments.length).fill(3.0);
+    itemTargetSD = Array(itemAssignments.length).fill(1.0);
+    renderItemAssignmentPanel();
+});
+document.getElementById('sampleSize').addEventListener('change', function() {
+    const max = isMemberActive() ? 5000 : 30;
+    if (parseInt(this.value) > max) this.value = max;
+});
+
+// 初始默认数据
+dimensions = [{ id:1, name:"满意度" }, { id:2, name:"忠诚度" }, { id:3, name:"产品质量" }, { id:4, name:"感知价值" }];
+nextDimId = 5;
+regressionEdges = [{ sourceId:3, targetId:1, coeff:0.5 }, { sourceId:1, targetId:2, coeff:0.4 }];
+moderationEffects = [{ sourceId:4, moderatorId:3, targetId:1, coeff:0.25 }];
+diffRules = [{ basicItemName:"性别", targetDimId:1, maxDiff:0.5 }];
+const initTotal = 16;
+itemAssignments = Array(initTotal).fill(0).map((_,i) => i<4 ? 1 : i<8 ? 2 : i<12 ? 3 : 4);
+itemTargetMean = Array(initTotal).fill(3.0);
+itemTargetSD = Array(initTotal).fill(1.0);
+basicItems = [
+    { id:1, name:"性别", type:"select", options:["男","女","不愿透露"] },
+    { id:2, name:"年龄段", type:"select", options:["18-25","26-35","36-45","46以上"] },
+    { id:3, name:"月收入(元)", type:"number", min:3000, max:30000 },
+    { id:4, name:"城市类型", type:"text", options:["一线城市","二线城市","三线及以下"] }
+];
+nextBasicId = 5;
+
+// 开始
+refreshAllUI();
+checkMemberStatus();
+</script>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+</body>
+</html>
